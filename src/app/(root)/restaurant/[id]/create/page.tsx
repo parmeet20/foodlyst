@@ -48,8 +48,8 @@ const CreateOffer = () => {
     const [uploading, setUploading] = useState(false);
 
     const form = useForm<ExtendedFoodOfferRequest>({
-        // @typescript-eslint/no-explicit-any
-        resolver: zodResolver(ExtendedFoodOfferRequestSchema) as unknown as any,
+        // @ts-expect-error - TypeScript may have trouble inferring the schema here
+        resolver: zodResolver(ExtendedFoodOfferRequestSchema),
         defaultValues: {
             isActive: true,
             restaurantId: id,
@@ -127,6 +127,7 @@ const CreateOffer = () => {
             }
         }
     };
+    
     if (user?.role !== "OWNER") {
         return <div className="flex justify-center items-center min-h-screen">
             <h1 className="text-2xl font-bold">Access Denied: Only restaurant owners can create food offers.</h1>
@@ -143,7 +144,10 @@ const CreateOffer = () => {
                 </CardHeader>
 
                 <CardContent>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <form onSubmit={
+                        // @ts-expect-error - TypeScript may have trouble inferring the type here
+                        form.handleSubmit(onSubmit)
+                        } className="space-y-6">
                         <div>
                             <Label>Food Name</Label>
                             <Input {...form.register("foodName")} placeholder="e.g. Chicken Curry Combo" />

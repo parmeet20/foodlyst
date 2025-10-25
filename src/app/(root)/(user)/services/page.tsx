@@ -7,16 +7,17 @@ import { useAuthStore } from '@/store/userStore';
 import { WebSocketMessage } from '@/types/websocket';
 import React, { useEffect, useState, useCallback } from 'react';
 import RestaurantAnalyticsPage from '@/components/manual/RestaurantAnalyticsPage';
+import { Restaurant } from '@/types';
 
 const LiveOffersServicePage = () => {
   const [offers, setOffers] = useState<FoodOfferRequestExtended[]>([]);
-  const [restaurants, setRestaurants] = useState<{ [key: number]: unknown }>({});
+  const [restaurants, setRestaurants] = useState<{ [key: number]: Restaurant }>({});
   const { user } = useAuthStore();
 
   const getRestaurant = useCallback(async (restaurantId: number) => {
     try {
       const rest = await getRestrauntByid(restaurantId.toString());
-      setRestaurants((prev) => ({ ...prev, [restaurantId]: rest }));
+      setRestaurants((prev) => ({ ...prev, [restaurantId]: rest } as { [key: number]: Restaurant }));
       return rest;
     } catch (error) {
       console.error('Error fetching restaurant:', error);
@@ -66,11 +67,13 @@ const LiveOffersServicePage = () => {
   useEffect(() => {
     fetchLiveOffers();
   }, [fetchLiveOffers]);
+
   if (user?.role === "OWNER") return <RestaurantAnalyticsPage />
 
   return (
     <div className="container mx-auto p-4 pt-24">
-      <div className="flex items-center mx-auto space-x-4 justify-center">      <div className='h-5 w-5 mb-1 animate-bounce rounded-full bg-green-400' />
+      <div className="flex items-center mx-auto space-x-4 justify-center">
+        <div className='h-5 w-5 mb-1 animate-bounce rounded-full bg-green-400' />
         <h1 className="text-4xl text-center font-bold mb-4">Live Food Offers</h1>
       </div>
       {!user?.latitude || !user?.longitude ? (
@@ -83,8 +86,7 @@ const LiveOffersServicePage = () => {
             <OfferCard
               key={offer.id}
               offer={offer}
-              // @typescript-eslint/no-explicit-any
-              restaurant={restaurants[offer.restaurantId] as any}
+              restaurant={restaurants[offer.restaurantId]}
               onOrderSuccess={fetchLiveOffers}
             />
           ))}
