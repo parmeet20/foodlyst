@@ -114,11 +114,10 @@ const LoginPage = () => {
             }
 
             router.push("/");
-        } catch (err: any) {
-            console.error(err.message);
-            toast("Login Failed", {
-                description: err.message || "Invalid credentials. Please try again.",
-            });
+        } catch (err) {
+            console.error(err);
+            toast(
+                "Invalid credentials. Please try again.",);
         } finally {
             setLoading(false);
         }

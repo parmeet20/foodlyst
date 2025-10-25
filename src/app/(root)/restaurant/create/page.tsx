@@ -86,10 +86,8 @@ const CreateRestrauntPage = () => {
       } else {
         toast.error("❌ Failed to create restaurant");
       }
-    } catch (error: any) {
-      toast.error("Error", {
-        description: error.message || "Something went wrong",
-      });
+    } catch (error) {
+      toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }

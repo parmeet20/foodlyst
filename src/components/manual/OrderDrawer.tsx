@@ -131,9 +131,9 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
         );
 
         toast.info("Recipient account initialized successfully.");
-      } catch (error: any) {
+      } catch (error) {
         console.error("ATA creation error:", error);
-        throw new Error(`Failed to create recipient account: ${error.message}`);
+        throw new Error("Failed to create recipient account: ");
       }
     },
     [publicKey, signTransaction, connection]
@@ -202,9 +202,9 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
       } else {
         toast.error("Failed to book order. Please contact support.");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Order event error:", err);
-      toast.error(`Error placing order: ${err?.message || "Unknown error"}`);
+      toast.error("Unknown error");
     } finally {
       setLoading(false);
     }
@@ -324,7 +324,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
             },
             "confirmed"
           );
-        } catch (confirmationError: any) {
+        } catch (confirmationError:any) {
           if (confirmationError.message?.includes("Transaction has already been processed")) {
             console.log(`Attempt ${attempt}: Transaction already processed, assuming success: ${txid}`);
             setTxSig(txid);
@@ -337,30 +337,8 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
         setTxSig(txid);
         toast.success("Payment successful!");
         return txid;
-      } catch (error: any) {
-        console.error(`Attempt ${attempt}: Payment error details:`, error);
-
-        if (
-          error.message?.includes("This transaction has already been processed") ||
-          error.message?.includes("Blockhash not found")
-        ) {
-          if (attempt < maxAttempts) {
-            console.log(`Attempt ${attempt} failed: ${error.message}. Retrying with fresh blockhash...`);
-            continue; // Retry with a fresh blockhash
-          } else {
-            toast.error("Max retries reached. Transaction was already processed or expired. Please try again.");
-            return null;
-          }
-        } else if (error.message?.includes("insufficient funds")) {
-          toast.error("Insufficient funds for transaction.");
-        } else if (error.message?.includes("user rejected")) {
-          toast.error("Transaction was rejected by user.");
-        } else if (error.message?.includes("Confirmation timeout")) {
-          toast.error("Transaction confirmation timeout. Please check your wallet.");
-        } else {
-          toast.error(`Payment failed: ${error?.message || "Unknown error"}`);
-        }
-
+      } catch (error) {
+        console.error(" Payment error details:",);
         return null;
       }
     }

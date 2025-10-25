@@ -48,7 +48,7 @@ const CreateOffer = () => {
     const [uploading, setUploading] = useState(false);
 
     const form = useForm<ExtendedFoodOfferRequest>({
-        resolver: zodResolver(ExtendedFoodOfferRequestSchema) as any,
+        resolver: zodResolver(ExtendedFoodOfferRequestSchema) as unknown as any,
         defaultValues: {
             isActive: true,
             restaurantId: id,
@@ -117,8 +117,8 @@ const CreateOffer = () => {
             } else {
                 toast.error("Failed to create food offer.");
             }
-        } catch (err: any) {
-            toast.error(err.message || "Something went wrong.");
+        } catch (err) {
+            toast.error("Something went wrong.");
         } finally {
             if (previewImage) {
                 URL.revokeObjectURL(previewImage);

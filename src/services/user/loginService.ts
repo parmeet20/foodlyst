@@ -24,10 +24,9 @@ export const loginUser = async (data: LoginInput): Promise<User> => {
         setUser(userRes.data);
 
         return userRes.data;
-    } catch (error: any) {
-        console.error("❌ Error in loginUser:", error?.response?.data || error.message);
-        throw new Error(
-            error?.response?.data?.message || "Login failed. Please check your credentials."
+    } catch (error) {
+        console.error("❌ Error in loginUser:", error);
+        throw new Error("Login failed. Please check your credentials."
         );
     }
 };

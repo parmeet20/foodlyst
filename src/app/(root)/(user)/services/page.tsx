@@ -10,7 +10,7 @@ import RestaurantAnalyticsPage from '@/components/manual/RestaurantAnalyticsPage
 
 const LiveOffersServicePage = () => {
   const [offers, setOffers] = useState<FoodOfferRequestExtended[]>([]);
-  const [restaurants, setRestaurants] = useState<{ [key: number]: any }>({});
+  const [restaurants, setRestaurants] = useState<{ [key: number]: unknown }>({});
   const { user } = useAuthStore();
 
   const getRestaurant = useCallback(async (restaurantId: number) => {
@@ -83,7 +83,7 @@ const LiveOffersServicePage = () => {
             <OfferCard
               key={offer.id}
               offer={offer}
-              restaurant={restaurants[offer.restaurantId] || null}
+              restaurant={restaurants[offer.restaurantId] as any}
               onOrderSuccess={fetchLiveOffers}
             />
           ))}

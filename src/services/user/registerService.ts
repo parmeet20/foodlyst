@@ -5,10 +5,9 @@ export const registerUser = async (data: RegisterUserInput): Promise<User> => {
     try {
         const res = await baseUrl.post<User>("/api/v1/user/register", data);
         return res.data;
-    } catch (error: any) {
-        console.error("❌ Error in registerUser:", error?.response?.data || error.message);
-        throw new Error(
-            error?.response?.data?.message || "Registration failed. Please try again."
+    } catch (error) {
+        console.error("❌ Error in registerUser:", error);
+        throw new Error( "Registration failed. Please try again."
         );
     }
 };

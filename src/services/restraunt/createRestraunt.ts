@@ -35,7 +35,7 @@ export const createRestaurant = async (
         );
 
         return response.data;
-    } catch (error: any) {
+    } catch (error) {
         console.log(error);
         return null;
     }

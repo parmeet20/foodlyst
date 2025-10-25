@@ -9,8 +9,8 @@ export const grabMyOrderHandler = async (rating: number, orderToken: string, aut
             }
         });
         return res.data as GrabOffer;
-    } catch (error: any) {
-        const message = error.response?.data?.message || 'Failed to grab order';
+    } catch (error) {
+        const message = 'Failed to grab order';
         throw new Error(message);
     }
 };

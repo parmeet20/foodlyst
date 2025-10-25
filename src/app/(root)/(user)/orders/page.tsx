@@ -254,8 +254,8 @@ const OrderDetailsPage = () => {
                 setGrabbedOrders((prev) => new Set(prev).add(order.token));
                 toast('Order grabbed successfully!');
             }
-        } catch (error: any) {
-            toast(error.message || 'Failed to grab order');
+        } catch (error) {
+            toast('Failed to grab order');
         }
     };
 

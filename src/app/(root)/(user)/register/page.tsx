@@ -75,11 +75,9 @@ const SignupPage = () => {
             });
 
             router.push("/login");
-        } catch (err: any) {
-            console.error(err.message);
-            toast.error("Signup Failed", {
-                description: err.message || "Something went wrong. Please try again.",
-            });
+        } catch (err) {
+            console.error("❌ Signup error:", err);
+            toast.error("Something went wrong. Please try again.");
         }
     };
     return (
