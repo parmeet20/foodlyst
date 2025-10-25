@@ -48,6 +48,7 @@ const CreateOffer = () => {
     const [uploading, setUploading] = useState(false);
 
     const form = useForm<ExtendedFoodOfferRequest>({
+        // @typescript-eslint/no-explicit-any
         resolver: zodResolver(ExtendedFoodOfferRequestSchema) as unknown as any,
         defaultValues: {
             isActive: true,

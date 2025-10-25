@@ -43,7 +43,7 @@ const signupSchema = z.object({
     phone: z
         .string()
         .regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number"),
-    // @ts-ignore
+    // @ts-expect-error - TypeScript may incorrectly flag the enum constraint
     role: z.enum(["USER", "OWNER"] as const, { required_error: "Please select a role" }),
 });
 
@@ -65,12 +65,12 @@ const SignupPage = () => {
     });
 
     const onSubmit = async (values: SignupFormValues) => {
+        setLoading(true);
         try {
             const newUser = await registerUser(values);
             console.log("✅ Registered user:", newUser);
 
             toast("Signup success", {
-                // title: "Signup Successful",
                 description: "You can now login with your credentials.",
             });
 
@@ -78,8 +78,11 @@ const SignupPage = () => {
         } catch (err) {
             console.error("❌ Signup error:", err);
             toast.error("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
+
     return (
         <div className="flex pt-24 h-screen items-center justify-center">
             <Card className="w-full max-w-md shadow-xl rounded-2xl">
@@ -179,8 +182,12 @@ const SignupPage = () => {
                             />
 
                             <Button type="submit" className="w-full" disabled={loading}>
-                                {loading ? <div className="flex items-center space-x-2">      <Loader2Icon className="animate-spin" />
-                                    <p>Please wait</p></div> : "Login"}
+                                {loading ? (
+                                    <div className="flex items-center space-x-2">
+                                        <Loader2Icon className="animate-spin" />
+                                        <p>Please wait</p>
+                                    </div>
+                                ) : "Sign Up"}
                             </Button>
                         </form>
                     </Form>

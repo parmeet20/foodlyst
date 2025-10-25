@@ -83,6 +83,7 @@ const LiveOffersServicePage = () => {
             <OfferCard
               key={offer.id}
               offer={offer}
+              // @typescript-eslint/no-explicit-any
               restaurant={restaurants[offer.restaurantId] as any}
               onOrderSuccess={fetchLiveOffers}
             />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Connection,
@@ -56,11 +56,10 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
 }) => {
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [txSig, setTxSig] = useState<string>("");
   const totalPrice = qty * pricePerQty;
   const { user, token } = useAuthStore();
 
-  const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+  const connection = useMemo(() => new Connection("https://api.devnet.solana.com", "confirmed"), []);
   const { publicKey, signTransaction } = useWallet();
 
   useEffect(() => {
@@ -70,7 +69,6 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
   // Reset states when drawer opens/closes
   useEffect(() => {
     if (open) {
-      setTxSig("");
       setQty(1);
     }
   }, [open]);
@@ -91,14 +89,18 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
           await getAccount(connection, toTokenAccount);
           console.log("Recipient ATA already exists");
           return; // ATA exists, no need to create
-        } catch (error) {
+        } catch {
           // ATA doesn't exist, create it
+        }
+
+        if (!publicKey || !signTransaction) {
+          throw new Error("Wallet not connected");
         }
 
         const ataTransaction = new Transaction();
         ataTransaction.add(
           createAssociatedTokenAccountInstruction(
-            publicKey!, // Payer
+            publicKey, // Payer
             toTokenAccount, // ATA to create
             restaurantWalletKey, // Owner
             tokenMintAddress // Mint
@@ -108,9 +110,9 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
         const { blockhash, lastValidBlockHeight } =
           await connection.getLatestBlockhash("confirmed");
         ataTransaction.recentBlockhash = blockhash;
-        ataTransaction.feePayer = publicKey!;
+        ataTransaction.feePayer = publicKey;
 
-        const signedATATx = await signTransaction!(ataTransaction);
+        const signedATATx = await signTransaction(ataTransaction);
         const rawATATransaction = signedATATx.serialize();
 
         const ataTxid = await connection.sendRawTransaction(rawATATransaction, {
@@ -131,95 +133,14 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
         );
 
         toast.info("Recipient account initialized successfully.");
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("ATA creation error:", error);
-        throw new Error("Failed to create recipient account: ");
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Failed to create recipient account: ${errorMessage}`);
       }
     },
     [publicKey, signTransaction, connection]
   );
-
-  const handleOrderEvent = useCallback(async () => {
-    try {
-      if (!user || !token) {
-        toast.error("Please login to place an order.");
-        return;
-      }
-
-      if (!publicKey) {
-        toast.error("Please connect your wallet.");
-        return;
-      }
-
-      setLoading(true);
-
-      // 🔹 Step 1: Validate inputs
-      if (!tokenMint || !restaurant?.walletAddress) {
-        toast.error("Token mint or restaurant wallet not provided.");
-        return;
-      }
-
-      let tokenMintAddress: PublicKey;
-      let restaurantWalletKey: PublicKey;
-
-      try {
-        tokenMintAddress = new PublicKey(tokenMint);
-        restaurantWalletKey = new PublicKey(restaurant.walletAddress);
-      } catch (err) {
-        toast.error("Invalid wallet or token address provided.");
-        return;
-      }
-
-      // 🔹 Step 2: Ensure recipient ATA exists
-      await createATAIfNeeded(tokenMintAddress, restaurantWalletKey);
-
-      // 🔹 Step 3: Make the payment on Solana
-      const paymentTxId = await handlePayment();
-
-      if (!paymentTxId) {
-        return; // Error is already handled in handlePayment
-      }
-
-      // 🔹 Step 4: Prepare order data for backend
-      const orderData: OrderData = {
-        userId: user.id,
-        restaurantId: restaurant.id,
-        foodOfferRequestId,
-        quantity: qty,
-        token: tokenMint,
-        totalPrice,
-        txHash: paymentTxId,
-        paymentId: paymentTxId,
-      };
-
-      // 🔹 Step 5: Call backend API
-      const success = await bookOrderHandler(orderData, token);
-
-      if (success) {
-        toast.success("✅ Order placed successfully!");
-        onOrderSuccess?.();
-        onClose();
-      } else {
-        toast.error("Failed to book order. Please contact support.");
-      }
-    } catch (err) {
-      console.error("Order event error:", err);
-      toast.error("Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    user,
-    token,
-    publicKey,
-    restaurant,
-    foodOfferRequestId,
-    qty,
-    totalPrice,
-    tokenMint,
-    onClose,
-    createATAIfNeeded,
-  ]);
 
   const handlePayment = useCallback(async (): Promise<string | null> => {
     const maxAttempts = 3;
@@ -244,7 +165,7 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
         try {
           tokenMintAddress = new PublicKey(tokenMint);
           restaurantWalletKey = new PublicKey(restaurant.walletAddress);
-        } catch (err) {
+        } catch {
           toast.error("Invalid wallet or token address provided.");
           return null;
         }
@@ -324,27 +245,135 @@ export const OrderDrawer: React.FC<OrderDrawerProps> = ({
             },
             "confirmed"
           );
-        } catch (confirmationError:any) {
-          if (confirmationError.message?.includes("Transaction has already been processed")) {
+        } catch (confirmationError: unknown) {
+          const errorMessage = confirmationError instanceof Error ? confirmationError.message : "";
+          if (errorMessage.includes("Transaction has already been processed")) {
             console.log(`Attempt ${attempt}: Transaction already processed, assuming success: ${txid}`);
-            setTxSig(txid);
             toast.success("Payment successful (already processed)!");
             return txid;
           }
           throw confirmationError;
         }
 
-        setTxSig(txid);
         toast.success("Payment successful!");
         return txid;
-      } catch (error) {
-        console.error(" Payment error details:",);
+      } catch (error: unknown) {
+        console.error(`Attempt ${attempt}: Payment error details:`, error);
+
+        const errorMessage = error instanceof Error ? error.message : "";
+
+        if (
+          errorMessage.includes("This transaction has already been processed") ||
+          errorMessage.includes("Blockhash not found")
+        ) {
+          if (attempt < maxAttempts) {
+            console.log(`Attempt ${attempt} failed: ${errorMessage}. Retrying with fresh blockhash...`);
+            continue; // Retry with a fresh blockhash
+          } else {
+            toast.error("Max retries reached. Transaction was already processed or expired. Please try again.");
+            return null;
+          }
+        } else if (errorMessage.includes("insufficient funds")) {
+          toast.error("Insufficient funds for transaction.");
+        } else if (errorMessage.includes("user rejected")) {
+          toast.error("Transaction was rejected by user.");
+        } else if (errorMessage.includes("Confirmation timeout")) {
+          toast.error("Transaction confirmation timeout. Please check your wallet.");
+        } else {
+          toast.error(`Payment failed: ${errorMessage || "Unknown error"}`);
+        }
+
         return null;
       }
     }
 
     return null; // Fallback if all attempts fail
   }, [publicKey, signTransaction, tokenMint, restaurant, totalPrice, connection]);
+
+  const handleOrderEvent = useCallback(async () => {
+    try {
+      if (!user || !token) {
+        toast.error("Please login to place an order.");
+        return;
+      }
+
+      if (!publicKey) {
+        toast.error("Please connect your wallet.");
+        return;
+      }
+
+      setLoading(true);
+
+      // 🔹 Step 1: Validate inputs
+      if (!tokenMint || !restaurant?.walletAddress) {
+        toast.error("Token mint or restaurant wallet not provided.");
+        return;
+      }
+
+      let tokenMintAddress: PublicKey;
+      let restaurantWalletKey: PublicKey;
+
+      try {
+        tokenMintAddress = new PublicKey(tokenMint);
+        restaurantWalletKey = new PublicKey(restaurant.walletAddress);
+      } catch {
+        toast.error("Invalid wallet or token address provided.");
+        return;
+      }
+
+      // 🔹 Step 2: Ensure recipient ATA exists
+      await createATAIfNeeded(tokenMintAddress, restaurantWalletKey);
+
+      // 🔹 Step 3: Make the payment on Solana
+      const paymentTxId = await handlePayment();
+
+      if (!paymentTxId) {
+        return; // Error is already handled in handlePayment
+      }
+
+      // 🔹 Step 4: Prepare order data for backend
+      const orderData: OrderData = {
+        userId: user.id,
+        restaurantId: restaurant.id,
+        foodOfferRequestId,
+        quantity: qty,
+        token: tokenMint,
+        totalPrice,
+        txHash: paymentTxId,
+        paymentId: paymentTxId,
+      };
+
+      // 🔹 Step 5: Call backend API
+      const success = await bookOrderHandler(orderData, token);
+
+      if (success) {
+        toast.success("✅ Order placed successfully!");
+        onOrderSuccess?.();
+        onClose();
+      } else {
+        toast.error("Failed to book order. Please contact support.");
+      }
+    } catch (error: unknown) {
+      console.error("Order event error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Error placing order: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    user,
+    token,
+    publicKey,
+    restaurant,
+    foodOfferRequestId,
+    qty,
+    totalPrice,
+    tokenMint,
+    onClose,
+    createATAIfNeeded,
+    handlePayment,
+    onOrderSuccess,
+  ]);
 
   const handleIncrement = useCallback(() => {
     setQty((prev) => Math.min(availableQty, prev + 1));
