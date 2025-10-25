@@ -9,8 +9,7 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 
-// @ts-expect-error - CSS import from wallet adapter has no type definitions
-import "@solana/wallet-adapter-react-ui/styles.css";
+require('@solana/wallet-adapter-react-ui/styles.css');
 
 export default function AppWalletProvider({
   children,
