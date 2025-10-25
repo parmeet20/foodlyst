@@ -1,0 +1,6 @@
+
+export const ENV = {
+  NEXT_PUBLIC_WS_URL: process.env.NEXT_PUBLIC_WS_URL as string,
+  NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL as string,
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as string,
+};
