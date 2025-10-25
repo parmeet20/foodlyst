@@ -9,6 +9,7 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 
+// Only import styles, not the entire UI library
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 export default function AppWalletProvider({
@@ -17,19 +18,19 @@ export default function AppWalletProvider({
   children: React.ReactNode;
 }) {
   const [isClient, setIsClient] = useState(false);
+  
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Return null until client-side rendering
-  const network = WalletAdapterNetwork.Devnet;
+  // Memoize network and endpoint
+  const network = useMemo(() => WalletAdapterNetwork.Devnet, []);
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  const wallets = useMemo(
-    () => [
-    ],
-    [network]
-  );
   
+  // Empty array is correct - Wallet Standard handles wallet detection
+  const wallets = useMemo(() => [], []);
+  
+  // Prevent SSR hydration issues
   if (!isClient) {
     return null;
   }
